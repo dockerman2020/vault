@@ -1,0 +1,56 @@
+kind: pipeline
+type: kubernetes
+name: VaultBuild
+
+steps:
+- name: lint chart
+  image: pelotech/drone-helm3
+  settings:
+    mode: lint
+    chart: ./
+    value_files: ./values.yaml
+  when:
+    event:
+      branch: main
+        - pull_request
+
+- name: Deploy Vault dry-run.
+  image: pelotech/drone-helm3
+  settings:
+    namespace: vault
+    mode: upgrade
+    chart: ./
+    release: vault-server
+    value_files: ./values.yaml
+    dry-run: 1
+  environment:
+    API_SERVER:
+      from_secret: k8s_server
+    KUBE_TOKEN:
+      from_secret: k8s_token
+    KUBE_CERTIFICATE:
+      from_secret: k8s_crt
+  when:
+    event:
+      branch: main
+        - pull_request
+
+- name: Deploy Vault.
+  image: pelotech/drone-helm3
+  settings:
+    namespace: vault
+    mode: upgrade
+    chart: ./
+    release: vault-server
+    value_files: ./values.yaml
+  environment:
+    API_SERVER:
+      from_secret: k8s_server
+    KUBE_TOKEN:
+      from_secret: k8s_token
+    KUBE_CERTIFICATE:
+      from_secret: k8s_crt
+  when:
+    event:
+      branch: main
+        - pull_request
